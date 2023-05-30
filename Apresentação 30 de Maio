@@ -1,0 +1,200 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#define PI 3.141592654
+
+///Definicao de um ponto
+typedef struct{
+    int alias;
+    float x;
+    float y;
+    //float fx;
+    //float fy;
+}node;
+///Definicao de um elemento
+typedef struct{
+    int alias;
+    node P1;
+    node P2;
+    float length;
+    float fx,fy,F;
+    float theta;
+    char type;
+}element;
+///Definicao de um suporte
+typedef struct{
+    char type;
+    node P;
+    float fx;
+    float fy;
+    float M;
+}support;
+///Definicao de uma forca
+typedef struct{
+    node P;
+    float fx;
+    float fy;
+}force;
+///Funcao para criar nos
+node create_node(int Nnode)
+{
+    node Node;
+    printf("Coordenada x do no= ");
+    scanf("%f",&Node.x);
+    printf("Coordenada y do no= ");
+    scanf("%f",&Node.y);
+    Node.alias = Nnode;
+    return Node;
+}
+///Funcao para criar elementos
+element create_element(int Nelem, node nodevet[])
+{
+    element Elem;
+    //printf("Quantos elementos?");
+//    scanf("%d",n);
+    Elem.alias=Nelem;
+    printf("Coordenada inicial da barra= ");
+    scanf("%d",&Elem.P1.alias);
+    ///int *cont[n];
+    ///for(i=0;i<n;i++)
+    ///    if(Elem.P1.alias=i)
+    ///    cont[i]++;
+    printf("Coordenada final da barra= ");
+    scanf("%d",&Elem.P2.alias);
+    Elem.P1=nodevet[Elem.P1.alias];
+    Elem.P2=nodevet[Elem.P2.alias];
+    Elem.length= sqrt(Elem.P2.x - Elem.P2.x * Elem.P2.x - Elem.P2.x + Elem.P2.y - Elem.P1.y * Elem.P2.y - Elem.P1.y);
+    if(Elem.P1.x!=Elem.P2.x || Elem.P1.y!=Elem.P2.y)
+    {
+        Elem.theta=atan((Elem.P2.y-Elem.P1.y)/(Elem.P2.x-Elem.P1.x));
+        //Elem.theta=Elem.theta*(180/PI);
+    }
+    else
+        Elem.theta=0;
+    if (Elem.theta==0)
+        Elem.fy=0;
+    else if (Elem.theta==PI/2)
+        Elem.fx=0;
+    return Elem;
+}
+///Funcao para criar Forcas
+force create_force()
+{
+    force Force;
+    printf("Em qual no a forca sera aplicada: ");
+    scanf("%d",&Force.P.alias);
+    printf("Coordenada da forca em x= ");
+    scanf("%f",&Force.fx);
+    printf("Coordenada da forca em y= ");
+    scanf("%f",&Force.fy);
+    return Force;
+}
+///Funcao para criar Apoios
+support create_support(node nodevet[])
+{
+    support Sprt;
+    printf("Em qual no esta o apoio: ");
+    scanf("%d",&Sprt.P.alias);
+//    do
+//    {
+        printf("Qual o tipo de apoio(f para fixo,p para pino,r para rolete): ");///pino???
+        getchar();
+        scanf("%c",&Sprt.type);
+//    }
+//    while(Sprt.type!='f'||'p'||'r');
+    Sprt.P=nodevet[Sprt.P.alias];
+    Sprt.fx=0;
+    Sprt.fy=0;
+    Sprt.M=0;
+    return Sprt;
+}
+///Funcao para transformar uma forca axial em forca
+force axial_to_force(int fP,element Elem)
+{
+    force Axialforce;
+    Axialforce.P.alias=fP;
+    Axialforce.fx=Elem.F*cos(Elem.theta);
+    Axialforce.fy=Elem.F*sin(Elem.theta);
+//        printf("fx:%f,fy:%f",Axialforce[i].fx,Axialforce[i].fy);
+    return Axialforce;
+}
+int main()
+{
+    int i,j,nn=3,ne=3,nf=1,Nnode=1,Nelem=0,cont=0,fw=0,fP[nf];
+    node nodevet[3];
+    element elemvet[3];
+    force forcevet[1];
+    force axialvet[2];
+    support sprtvet[2];
+    float SumX[1],SumY[1];
+    for(i=0;i<nn;i++)
+        {
+            nodevet[i]=create_node(Nnode);
+            Nnode++;
+        }
+        for(i=0;i<ne;i++)
+        {
+            elemvet[i]=create_element(Nelem,nodevet);
+            Nelem++;
+        }
+    for(i=0;i<nf;i++)
+        forcevet[i]=create_force();
+//    for(i=0;i<2;i++)
+//            sprtvet[i]=create_support(nodevet);
+    while(cont!=ne)
+    {
+        for(i=0;i<nf;i++)
+        {
+            if((forcevet[i].P.alias==elemvet[cont].P1.alias || forcevet[i].P.alias==elemvet[cont].P2.alias))
+            {
+                if(cos(elemvet[cont].theta)!=0&&sin(elemvet[cont].theta!=0))
+                {
+                    SumX[cont]=SumX[cont]+forcevet[i].fx/cos(elemvet[cont].theta);
+                    SumY[cont]=SumY[cont]+forcevet[i].fy/sin(elemvet[cont].theta);
+                }
+            }
+            if(forcevet[i].P.alias==elemvet[cont].P1.alias)
+                fP[i]=elemvet[cont].P2.alias;
+            else if(forcevet[i].P.alias==elemvet[cont].P2.alias)
+                fP[i]=elemvet[cont].P1.alias;
+        }
+        elemvet[cont].F=sqrt(SumX[cont]*SumX[cont]+SumY[cont]*SumY[cont]);
+        printf("\nSumX= %f\nSumY= %f",SumX[cont],SumY[cont]);
+        cont++;
+    }
+    cont=0;
+    while(cont!=ne)
+    {
+        if(elemvet[cont].F>=0.00001)
+        {
+            for(i=0;i<nf;i=i+2)
+            {
+                axialvet[i+1]=axial_to_force(fP[i],elemvet[cont]);
+                axialvet[i]=forcevet[i];
+            }
+            if(fw==0)
+            {
+                cont=0;
+                fw=1;
+            }
+        }
+        if(elemvet[cont].theta==0)
+            axialvet[cont].fy=0;
+        else if((elemvet[cont].theta<=PI/2+0.0001)&&(elemvet[cont].theta>=PI/2-0.0001))
+        {
+            axialvet[cont].fx=0;
+        }
+        if((elemvet[cont].F<=0.00001)&&(elemvet[cont].F>=-0.00001))
+            elemvet[cont].F=sqrt(pow(axialvet[cont].fx,2)+pow(axialvet[cont].fy,2));
+        cont++;
+    }
+    for(i=0;i<ne;i++)
+    {
+        if(elemvet[i].theta>=0)
+            elemvet[i].type='T';
+        else
+            elemvet[i].type='C';
+        printf("\nForca axial na barra %d: %f, %c",elemvet[i].alias,elemvet[i].F,elemvet[i].type);
+    }
+    return 0;
+}
